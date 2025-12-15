@@ -1,0 +1,141 @@
+
+PROJECT: DATA DIGGER (MYSQL)
+
+----------------------------------
+CREATE DATABASE
+----------------------------------
+CREATE DATABASE DataDigger;
+USE DataDigger;
+
+----------------------------------
+CUSTOMERS TABLE
+----------------------------------
+CREATE TABLE Customers (
+    CustomerID INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(100),
+    Email VARCHAR(100),
+    Address VARCHAR(200)
+);
+
+INSERT INTO Customers (Name, Email, Address) VALUES
+('Alice', 'alice@gmail.com', 'Delhi'),
+('Bob', 'bob@gmail.com', 'Mumbai'),
+('Charlie', 'charlie@gmail.com', 'Pune'),
+('David', 'david@gmail.com', 'Bangalore'),
+('Alice', 'alice2@gmail.com', 'Chennai');
+
+SELECT * FROM Customers;
+
+UPDATE Customers
+SET Address = 'Noida'
+WHERE CustomerID = 1;
+
+DELETE FROM Customers
+WHERE CustomerID = 4;
+
+SELECT * FROM Customers
+WHERE Name = 'Alice';
+
+----------------------------------
+ORDERS TABLE
+----------------------------------
+CREATE TABLE Orders (
+    OrderID INT PRIMARY KEY AUTO_INCREMENT,
+    CustomerID INT,
+    OrderDate DATE,
+    TotalAmount DECIMAL(10,2),
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+
+INSERT INTO Orders (CustomerID, OrderDate, TotalAmount) VALUES
+(1, '2025-01-01', 2500),
+(2, '2025-01-10', 1800),
+(3, '2025-01-15', 3200),
+(1, '2025-02-01', 1500),
+(2, '2025-02-05', 4000);
+
+SELECT * FROM Orders WHERE CustomerID = 1;
+
+UPDATE Orders
+SET TotalAmount = 2700
+WHERE OrderID = 1;
+
+DELETE FROM Orders
+WHERE OrderID = 3;
+
+SELECT * FROM Orders
+WHERE OrderDate >= CURDATE() - INTERVAL 30 DAY;
+
+SELECT 
+MAX(TotalAmount) AS Highest,
+MIN(TotalAmount) AS Lowest,
+AVG(TotalAmount) AS Average
+FROM Orders;
+
+----------------------------------
+PRODUCTS TABLE
+----------------------------------
+CREATE TABLE Products (
+    ProductID INT PRIMARY KEY AUTO_INCREMENT,
+    ProductName VARCHAR(100),
+    Price DECIMAL(10,2),
+    Stock INT
+);
+
+INSERT INTO Products (ProductName, Price, Stock) VALUES
+('Laptop', 55000, 10),
+('Mobile', 15000, 20),
+('Headphones', 2000, 0),
+('Keyboard', 1200, 15),
+('Mouse', 800, 25);
+
+SELECT * FROM Products ORDER BY Price DESC;
+
+UPDATE Products
+SET Price = 16000
+WHERE ProductID = 2;
+
+DELETE FROM Products
+WHERE Stock = 0;
+
+SELECT * FROM Products
+WHERE Price BETWEEN 500 AND 2000;
+
+SELECT 
+MAX(Price) AS Most_Expensive,
+MIN(Price) AS Cheapest
+FROM Products;
+
+----------------------------------
+ORDER DETAILS TABLE
+----------------------------------
+CREATE TABLE OrderDetails (
+    OrderDetailID INT PRIMARY KEY AUTO_INCREMENT,
+    OrderID INT,
+    ProductID INT,
+    Quantity INT,
+    SubTotal DECIMAL(10,2),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+INSERT INTO OrderDetails (OrderID, ProductID, Quantity, SubTotal) VALUES
+(1, 1, 1, 55000),
+(1, 4, 2, 2400),
+(2, 2, 1, 15000),
+(4, 5, 3, 2400),
+(5, 1, 1, 55000);
+
+SELECT * FROM OrderDetails WHERE OrderID = 1;
+
+SELECT SUM(SubTotal) AS TotalRevenue FROM OrderDetails;
+
+SELECT ProductID, SUM(Quantity) AS TotalQuantity
+FROM OrderDetails
+GROUP BY ProductID
+ORDER BY TotalQuantity DESC
+LIMIT 3;
+
+SELECT ProductID, COUNT(*) AS SoldCount
+FROM OrderDetails
+WHERE ProductID = 1;
