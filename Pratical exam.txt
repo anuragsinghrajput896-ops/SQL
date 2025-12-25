@@ -1,0 +1,232 @@
+
+     Project Title: Smart Library Management System
+   
+
+-- ========================================================
+--  DATABASE CREATION
+-- ========================================================
+CREATE DATABASE smart_library;
+USE smart_library;
+
+-- ========================================================
+--  TABLE CREATION
+-- ========================================================
+
+-- Authors Table
+CREATE TABLE authors (
+    author_id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+-- Books Table
+CREATE TABLE books (
+    book_id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(200),
+    author_id INT,
+    category VARCHAR(50),
+    isbn VARCHAR(20),
+    published_date DATE,
+    price DECIMAL(10,2),
+    available_copies INT,
+    FOREIGN KEY (author_id) REFERENCES authors(author_id)
+);
+
+-- Members Table
+CREATE TABLE members (
+    member_id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    phone_number VARCHAR(15),
+    membership_date DATE
+);
+
+-- Transactions Table
+CREATE TABLE transactions (
+    transaction_id INT PRIMARY KEY AUTO_INCREMENT,
+    member_id INT,
+    book_id INT,
+    borrow_date DATE,
+    return_date DATE,
+    fine_amount DECIMAL(10,2),
+    FOREIGN KEY (member_id) REFERENCES members(member_id),
+    FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
+
+-- ========================================================
+-- 1. INSERT SAMPLE DATA
+-- ========================================================
+
+INSERT INTO authors (name, email) VALUES
+(1,'Chetan Bhagat','chetan@gmail.com'),
+(2,'APJ Abdul Kalam','kalam@gmail.com'),
+(3,'George Orwell', NULL);
+
+INSERT INTO books (title, author_id, category, isbn, published_date, price, available_copies) VALUES
+(1,'Wings of Fire',2,'Science','ISBN001','1999-01-01',450,5),
+(2,'1984',3,'Science','ISBN002','1949-06-08',350,2),
+(3,'Half Girlfriend',1,'Novel','ISBN003','2014-10-01',299,0);
+
+INSERT INTO members (name,email,phone_number,membership_date) VALUES
+(1,'Anurag Singh','anurag@gmail.com','9999999999','2021-05-10'),
+(2,'Rahul Mehta','rahul@gmail.com','8888888888','2023-01-15'),
+(3,'Sneha Patel',NULL,'7777777777','2020-07-20');
+
+INSERT INTO transactions (member_id, book_id, borrow_date, return_date, fine_amount) VALUES
+(1,1,1,'2024-01-01','2024-01-10',0),
+(2,1,2,'2024-02-01',NULL,50),
+(3,2,1,'2024-03-01','2024-03-15',0);
+
+-- ========================================================
+-- 1. CRUD OPERATIONS
+-- ========================================================
+
+-- Retrieve available books
+SELECT * FROM books WHERE available_copies > 0;
+
+-- Update book availability
+UPDATE books SET available_copies = available_copies - 1 WHERE book_id = 1;
+
+-- Delete inactive members (no borrow in last 1 year)
+DELETE FROM members
+WHERE member_id NOT IN (
+    SELECT DISTINCT member_id
+    FROM transactions
+    WHERE borrow_date >= CURDATE() - INTERVAL 1 YEAR
+);
+
+-- ========================================================
+-- 2. WHERE / LIMIT / HAVING
+-- ========================================================
+
+SELECT * FROM books WHERE published_date > '2015-01-01';
+SELECT * FROM books ORDER BY price DESC LIMIT 5;
+SELECT * FROM members WHERE membership_date < '2022-01-01';
+
+-- ========================================================
+-- 3. AND / OR / NOT
+-- ========================================================
+
+SELECT * FROM books WHERE category='Science' AND price < 500;
+SELECT * FROM books WHERE available_copies = 0;
+
+SELECT * FROM members
+WHERE membership_date > '2020-01-01'
+OR member_id IN (
+    SELECT member_id FROM transactions
+    GROUP BY member_id HAVING COUNT(*) > 3
+);
+
+-- ========================================================
+-- 4. ORDER BY / GROUP BY
+-- ========================================================
+
+SELECT * FROM books ORDER BY title;
+
+SELECT member_id, COUNT(*) AS total_borrowed
+FROM transactions
+GROUP BY member_id;
+
+SELECT category, COUNT(*) AS total_books
+FROM books
+GROUP BY category;
+
+-- ========================================================
+-- 5. AGGREGATE FUNCTIONS
+-- ========================================================
+
+SELECT AVG(price) AS average_price FROM books;
+
+SELECT book_id, COUNT(*) AS borrow_count
+FROM transactions
+GROUP BY book_id
+ORDER BY borrow_count DESC
+LIMIT 1;
+
+SELECT SUM(fine_amount) AS total_fines FROM transactions;
+
+-- ========================================================
+-- 6. JOINS
+-- ========================================================
+
+-- INNER JOIN
+SELECT b.title, a.name
+FROM books b
+INNER JOIN authors a ON b.author_id = a.author_id;
+
+-- LEFT JOIN
+SELECT m.name, t.book_id
+FROM members m
+LEFT JOIN transactions t ON m.member_id = t.member_id;
+
+-- Books never borrowed
+SELECT * FROM books
+WHERE book_id NOT IN (SELECT book_id FROM transactions);
+
+-- ========================================================
+-- 7. SUBQUERIES
+-- ========================================================
+
+SELECT * FROM members
+WHERE member_id NOT IN (SELECT member_id FROM transactions);
+
+-- ========================================================
+-- 8. DATE FUNCTIONS
+-- ========================================================
+
+SELECT YEAR(published_date) AS year, COUNT(*) 
+FROM books
+GROUP BY YEAR(published_date);
+
+SELECT DATEDIFF(return_date, borrow_date) AS late_days
+FROM transactions;
+
+SELECT DATE_FORMAT(borrow_date,'%d-%m-%Y') FROM transactions;
+
+-- ========================================================
+-- 9. STRING FUNCTIONS
+-- ========================================================
+
+SELECT UPPER(title) FROM books;
+SELECT TRIM(name) FROM authors;
+SELECT IFNULL(email,'Not Provided') FROM authors;
+
+-- ========================================================
+-- 10. WINDOW FUNCTIONS
+-- ========================================================
+
+SELECT book_id,
+COUNT(*) AS total_borrow,
+RANK() OVER (ORDER BY COUNT(*) DESC) AS rank_no
+FROM transactions
+GROUP BY book_id;
+
+SELECT member_id,
+COUNT(*) OVER (PARTITION BY member_id) AS cumulative_borrow
+FROM transactions;
+
+-- ========================================================
+-- 11. CASE EXPRESSIONS
+-- ========================================================
+
+-- Membership Status
+SELECT m.member_id,
+CASE
+    WHEN MAX(t.borrow_date) >= CURDATE() - INTERVAL 6 MONTH
+    THEN 'Active'
+    ELSE 'Inactive'
+END AS Membership_Status
+FROM members m
+LEFT JOIN transactions t ON m.member_id = t.member_id
+GROUP BY m.member_id;	
+
+-- Book Category
+SELECT title,
+CASE
+    WHEN published_date > '2020-01-01' THEN 'New Arrival'
+    WHEN published_date < '2000-01-01' THEN 'Classic'
+    ELSE 'Regular'
+END AS Book_Type
+FROM books;
+
+=================== END OF PROJECT =================== 
