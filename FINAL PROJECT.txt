@@ -1,0 +1,220 @@
+FINAL PROJECT
+
+-----------------------------------------
+1. STUDENTS TABLE
+-----------------------------------------
+
+CREATE TABLE Students (
+  StudentID INT PRIMARY KEY,
+  FirstName VARCHAR(50),
+  LastName VARCHAR(50),
+  Email VARCHAR(100),
+  BirthDate DATE,
+  EnrollmentDate DATE
+);
+
+INSERT INTO Students VALUES
+(1,'John','Doe','john.doe@email.com','2000-01-15','2022-08-01'),
+(2,'Jane','Smith','jane.smith@email.com','1999-05-25','2021-08-01'),
+(3,'Rahul','Patel','rahul@email.com','2001-03-10','2023-08-01');
+
+-----------------------------------------
+2. DEPARTMENTS TABLE
+-----------------------------------------
+
+CREATE TABLE Departments (
+  DepartmentID INT PRIMARY KEY,
+  DepartmentName VARCHAR(50)
+);
+
+INSERT INTO Departments VALUES
+(1,'Computer Science'),
+(2,'Mathematics');
+
+-----------------------------------------
+3. COURSES TABLE
+-----------------------------------------
+
+CREATE TABLE Courses (
+  CourseID INT PRIMARY KEY,
+  CourseName VARCHAR(100),
+  DepartmentID INT,
+  Credits INT,
+  FOREIGN KEY (DepartmentID) REFERENCES Departments(DepartmentID)
+);
+
+INSERT INTO Courses VALUES
+(101,'Introduction to SQL',1,3),
+(102,'Data Structures',2,4);
+
+-----------------------------------------
+4. INSTRUCTORS TABLE
+-----------------------------------------
+
+CREATE TABLE Instructors (
+  InstructorID INT PRIMARY KEY,
+  FirstName VARCHAR(50),
+  LastName VARCHAR(50),
+  Email VARCHAR(100),
+  DepartmentID INT,
+  Salary DECIMAL(10,2),
+  FOREIGN KEY (DepartmentID) REFERENCES Departments(DepartmentID)
+);
+
+INSERT INTO Instructors VALUES
+(1,'Alice','Johnson','alice@univ.com',1,70000),
+(2,'Bob','Lee','bob@univ.com',2,65000);
+
+-----------------------------------------
+5. ENROLLMENTS TABLE
+-----------------------------------------
+
+CREATE TABLE Enrollments (
+  EnrollmentID INT PRIMARY KEY,
+  StudentID INT,
+  CourseID INT,
+  EnrollmentDate DATE,
+  FOREIGN KEY (StudentID) REFERENCES Students(StudentID),
+  FOREIGN KEY (CourseID) REFERENCES Courses(CourseID)
+);
+
+INSERT INTO Enrollments VALUES
+(1,1,101,'2022-08-01'),
+(2,2,102,'2021-08-01'),
+(3,3,101,'2023-08-01');
+
+=========================================
+QUERIES TO PERFORM
+=========================================
+
+-- 1. CRUD OPERATION EXAMPLE
+INSERT INTO Students VALUES (4,'Amit','Shah','amit@email.com','2000-02-02','2022-08-01');
+SELECT * FROM Students;
+UPDATE Students SET Email='amit.shah@email.com' WHERE StudentID=4;
+DELETE FROM Students WHERE StudentID=4;
+
+-----------------------------------------
+
+-- 2. Students enrolled after 2022
+SELECT * FROM Students
+WHERE EnrollmentDate > '2022-12-31';
+
+-----------------------------------------
+
+-- 3. Courses from Mathematics department (limit 5)
+SELECT c.CourseName
+FROM Courses c
+JOIN Departments d ON c.DepartmentID = d.DepartmentID
+WHERE d.DepartmentName = 'Mathematics'
+LIMIT 5;
+
+-----------------------------------------
+
+-- 4. Number of students in each course (more than 5)
+SELECT CourseID, COUNT(StudentID) AS TotalStudents
+FROM Enrollments
+GROUP BY CourseID
+HAVING COUNT(StudentID) > 5;
+
+-----------------------------------------
+
+-- 5. Students enrolled in BOTH SQL and Data Structures
+SELECT StudentID
+FROM Enrollments
+WHERE CourseID IN (101,102)
+GROUP BY StudentID
+HAVING COUNT(DISTINCT CourseID) = 2;
+
+-----------------------------------------
+
+-- 6. Students enrolled in SQL OR Data Structures
+SELECT DISTINCT StudentID
+FROM Enrollments
+WHERE CourseID IN (101,102);
+
+-----------------------------------------
+
+-- 7. Average credits of all courses
+SELECT AVG(Credits) AS AverageCredits
+FROM Courses;
+
+-----------------------------------------
+
+-- 8. Maximum salary in Computer Science department
+SELECT MAX(Salary)
+FROM Instructors i
+JOIN Departments d ON i.DepartmentID = d.DepartmentID
+WHERE d.DepartmentName = 'Computer Science';
+
+-----------------------------------------
+
+-- 9. Students count per department
+SELECT d.DepartmentName, COUNT(e.StudentID) AS TotalStudents
+FROM Enrollments e
+JOIN Courses c ON e.CourseID = c.CourseID
+JOIN Departments d ON c.DepartmentID = d.DepartmentID
+GROUP BY d.DepartmentName;
+
+-----------------------------------------
+
+-- 10. INNER JOIN: students and their courses
+SELECT s.FirstName, c.CourseName
+FROM Students s
+INNER JOIN Enrollments e ON s.StudentID = e.StudentID
+INNER JOIN Courses c ON e.CourseID = c.CourseID;
+
+-----------------------------------------
+
+-- 11. LEFT JOIN: all students with courses (if any)
+SELECT s.FirstName, c.CourseName
+FROM Students s
+LEFT JOIN Enrollments e ON s.StudentID = e.StudentID
+LEFT JOIN Courses c ON e.CourseID = c.CourseID;
+
+-----------------------------------------
+
+-- 12. Subquery: students in courses having more than 10 students
+SELECT * FROM Students
+WHERE StudentID IN (
+  SELECT StudentID
+  FROM Enrollments
+  WHERE CourseID IN (
+    SELECT CourseID
+    FROM Enrollments
+    GROUP BY CourseID
+    HAVING COUNT(StudentID) > 10
+  )
+);
+
+-----------------------------------------
+
+-- 13. Extract year from enrollment date
+SELECT StudentID, YEAR(EnrollmentDate) AS EnrollYear
+FROM Students;
+
+-----------------------------------------
+
+-- 14. Concatenate instructor first and last name
+SELECT CONCAT(FirstName,' ',LastName) AS FullName
+FROM Instructors;
+
+-----------------------------------------
+
+-- 15. Running total of students enrolled
+SELECT CourseID,
+COUNT(StudentID) OVER (ORDER BY CourseID) AS RunningTotal
+FROM Enrollments;
+
+-----------------------------------------
+
+-- 16. CASE: Senior / Junior students
+SELECT StudentID, FirstName,
+CASE
+  WHEN TIMESTAMPDIFF(YEAR, EnrollmentDate, CURDATE()) > 4 THEN 'Senior'
+  ELSE 'Junior'
+END AS StudentStatus
+FROM Students;
+
+=========================================
+END OF PROJECT
+=========================================
